@@ -51,14 +51,14 @@ function props = ramificationStatsTest(impath, outpath)
     % Remove redundant background
     thI = imtophat(dnI, strel('disk', nhood_th));
     % FFT bandpass filter to remove noise
-%     fftI = fft_bandpass(thI, 10, 100, 1);       % GOOD FOR SOMA DETECTION
+    fftI = fft_bandpass(thI, 50, 100, 1);       % GOOD FOR SOMA DETECTION
     % Sharpen image
-%     shI = imsharpen(thI, 'Radius', 3, 'Amount', 0.6);
+    shI = imsharpen(fftI, 'Radius', 3, 'Amount', 0.6);
     
     % Remove extreme pixel values and normalize from 0 to 1
-    bot = double(prctile(thI(:),1));
-    top = double(prctile(thI(:),99));
-    I = (double(thI)-bot) / (top - bot);
+    bot = double(prctile(shI(:),1));
+    top = double(prctile(shI(:),99));
+    I = (double(shI)-bot) / (top - bot);
     I(I>1) = 1; % do the removing
     I(I<0) = 0; % do the removing
     
@@ -70,7 +70,7 @@ function props = ramificationStatsTest(impath, outpath)
     I_smooth = imgaussfilt(I, 2);
 %     seeds = imregionalmax(I_smooth);
 %     seeds = imextendedmax(I_smooth, double(prctile(I_smooth(:),85)), 4);
-    seeds = I >= 0.90;
+    seeds = I >= 0.75;
     % Remove small objects
     seeds = bwareaopen(seeds, 200);
     % ADD METHOD TO REMOVE NON-ELLIPTICAL OBJECTS
@@ -79,17 +79,27 @@ function props = ramificationStatsTest(impath, outpath)
     seeds = bwmorph(imfill(seeds, 'holes'), 'shrink', Inf);
     seeds(mask==0)=0; % remove seeds outside of our cyto mask
     [X, Y] = find(seeds);
-    
+   
 %     figure('name','seeds','NumberTitle', 'off')
 %     imshow(I,[]);
 %     hold on;
 %     plot(Y,X,'or','markersize',2,'markerfacecolor','r')
     
     %% Watershed
-    I_smooth = imgaussfilt(I, 1); % don't smooth too much for watersheding
+    I_smooth = imgaussfilt(I, 0.1); % don't smooth too much for watersheding
     I_min = imimposemin(max(I_smooth(:)) - I_smooth, seeds); % set locations of seeds to be -Inf (cause matlab watershed)
     L = watershed(I_min);
     L(mask==0)=0; % remove areas that aren't in our cellular mask
+    % Remove segmentations that don't overlap with seeds
+    L_mask = unique(L(seeds));
+    L_labels = unique(L(:));
+    for i = length(L_labels)
+        if ismember(L_labels(i), L_mask)
+            L(L==L_labels(i)) = L_labels(i);
+        else
+            L(L==L_labels(i)) = 0;
+        end
+    end
     binWatershed = L > 0;
     binWatershed = imclearborder(binWatershed);
 %     binWatershed = imerode(binWatershed, strel('disk', 3));
@@ -127,7 +137,7 @@ function props = ramificationStatsTest(impath, outpath)
         if nnz(bwI_open) > 0 & max(bwlabel(bwI_open), [], 'all') == 1
             processIdx(i) = 1;
             cnt = cnt + 1;
-            img_props = bwI_open;
+            img_props = img_props + bwI_open;
             % Skeletonize image
             skel = bwskel(bwI_open);
             img_skel = img_skel + skel;
@@ -140,7 +150,7 @@ function props = ramificationStatsTest(impath, outpath)
             props(i).MaxBranchLength = max(extractfield(skel_props, 'Perimeter')/2);
             props(i).AverageBranchLength = mean(extractfield(skel_props, 'Perimeter')/2);
             props(i).TotalBranchLength = sum(extractfield(skel_props, 'Perimeter')/2);
-            maskI_props = regionprops(bwI_open, 'BoundingBox', 'Area', 'Circularity', 'ConvexArea', 'ConvexImage', 'Image', 'MajorAxisLength', 'MinorAxisLength');
+            maskI_props = regionprops(bwI_open, 'BoundingBox','PixelIdxList', 'Area', 'Circularity', 'ConvexArea', 'ConvexImage', 'Image', 'MajorAxisLength', 'MinorAxisLength');
             x = fix(maskI_props.BoundingBox(1));
             y = fix(maskI_props.BoundingBox(2));
             bx = fix(maskI_props.BoundingBox(3));
@@ -148,7 +158,7 @@ function props = ramificationStatsTest(impath, outpath)
             soma = imcrop(bwI_open, [x, y, bx, by]);
             props(i).BoundingBox = maskI_props(1).BoundingBox;
             props(i).Area = maskI_props(1).Area;
-            props(i).FractalDimension = hausDim(bwI_open);
+            props(i).FractalDimension = hausDim(soma);
             props(i).Circularity = maskI_props(1).Circularity;
             props(i).SpanRatio =  maskI_props(1).MinorAxisLength / maskI_props(1).MajorAxisLength;
             props(i).Density = nnz(bwperim(bwI_open)) / maskI_props(1).ConvexArea;
@@ -181,16 +191,19 @@ function props = ramificationStatsTest(impath, outpath)
     for i = 1:length(props)
         props(i).Index = i;
     end
-
+    
     fout = fullfile(outpath, strcat('Labels', '_', fname, '.png'));
     fig2 = figure('visible', 'off', 'WindowState','maximized');
-    imshow(labeloverlay(labeloverlay(img, img_props, 'Colormap', [0 1 0], 'Transparency', 0.85), img_skel, 'Colormap', [1 0 0], 'Transparency', 0.10));
+    imshow(labeloverlay(labeloverlay(img, imdilate(bwperim(img_props), ones(2,2)), 'Colormap', [0 0 1], 'Transparency', 0.8), img_skel, 'Colormap', [1 0 0], 'Transparency', 0.3));
+%     imshow(labeloverlay(labeloverlay(img, img_props, 'Colormap', [0 1 0], 'Transparency', 0.85), img_skel, 'Colormap', [1 0 0], 'Transparency', 0.10));
     hold on;
+    plot(Y,X,'.','markersize',30,'markeredgecolor','r');
+%     plot(Y,X,'o','markersize',10,'markeredgecolor','g','markeredgecolor','r')
     for i = 1:size(props, 2)
-        rectangle('Position', props(i).BoundingBox, 'EdgeColor', 'r',...
-            'LineWidth', 0.5, 'LineStyle', ':');
+        rectangle('Position', props(i).BoundingBox, 'EdgeColor', '#00FF00',...
+            'LineWidth', 1, 'LineStyle', ':');
         text(props(i).BoundingBox(1)+5, props(i).BoundingBox(2)+10,...
-            num2str(props(i).Index), 'FontSize', 12);
+            num2str(props(i).Index), 'FontSize', 12, 'Color', '#00FF00');
     end
     hold off;
     title(strcat(fname, ': Detected Somas and Labels'), 'Interpreter', 'none');
