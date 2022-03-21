@@ -79,11 +79,7 @@ function props = ramificationStatsTest(impath, outpath)
     seeds = bwmorph(imfill(seeds, 'holes'), 'shrink', Inf);
     seeds(mask==0)=0; % remove seeds outside of our cyto mask
     [X, Y] = find(seeds);
-   
-%     figure('name','seeds','NumberTitle', 'off')
-%     imshow(I,[]);
-%     hold on;
-%     plot(Y,X,'or','markersize',2,'markerfacecolor','r')
+    seedsInd = sub2ind(size(mask), X, Y);
     
     %% Watershed
     I_smooth = imgaussfilt(I, 0.1); % don't smooth too much for watersheding
@@ -106,12 +102,12 @@ function props = ramificationStatsTest(impath, outpath)
     binWatershed = bwmorph(binWatershed, 'shrink', 2);
     L = L .* uint8(binWatershed);
     
-    figure;
-    imshow(labeloverlay(labeloverlay(img, imdilate(bwperim(L), ones(2,2)), 'Colormap', [0 0 1], 'Transparency', 0.5), mask, 'Colormap', [0 1 0], 'Transparency', 1));
-    hold on;
-    plot(Y,X,'x','markersize',10,'markeredgecolor','g','markeredgecolor','r');
-    plot(Y,X,'o','markersize',10,'markeredgecolor','g','markeredgecolor','r')
-    hold off;
+%     figure;       % for debugging
+%     imshow(labeloverlay(labeloverlay(img, imdilate(bwperim(L), ones(2,2)), 'Colormap', [0 0 1], 'Transparency', 0.5), mask, 'Colormap', [0 1 0], 'Transparency', 1));
+%     hold on;
+%     plot(Y,X,'x','markersize',10,'markeredgecolor','g','markeredgecolor','r');
+%     plot(Y,X,'o','markersize',10,'markeredgecolor','g','markeredgecolor','r')
+%     hold off;
     
     % Restore image to unint8
     I = uint8(I*255);
@@ -121,20 +117,13 @@ function props = ramificationStatsTest(impath, outpath)
     props = struct([]);
     iterL = unique(L); iterL(1) = [];
     cnt = 0;
-    processIdx = [];
     for i = 1:length(iterL)
         cell = L == iterL(i);
-%         maskI = I .* uint8(mask);
-        % Binarize image using Otsu's thresholding
-%         bwI = imbinarize(maskI, 'global');
-        % Morphologically close image
-%         bwI_close = imclose(bwI, strel('disk', 5));
-%         bwI_holes = imfill(bwI_close, 'holes');
-        % Remove small features
-        bwI_open = bwareaopen(cell, 2000);
+        bwI_open = bwareafilt(cell, 1); % Keep the largest object
+        tmp = regionprops(bwI_open, 'PixelIdxList');
         % Go through IF loop only when voxels are detected AND there's one
         % continuous structure
-        if nnz(bwI_open) > 0 & max(bwlabel(bwI_open), [], 'all') == 1
+        if nnz(bwI_open) > 0  & any(ismember(seedsInd, tmp.PixelIdxList)) %max(bwlabel(bwI_open), [], 'all') == 1
             processIdx(i) = 1;
             cnt = cnt + 1;
             img_props = img_props + bwI_open;
@@ -156,6 +145,7 @@ function props = ramificationStatsTest(impath, outpath)
             bx = fix(maskI_props.BoundingBox(3));
             by = fix(maskI_props.BoundingBox(4));
             soma = imcrop(bwI_open, [x, y, bx, by]);
+            props(i).PixelIdxList = maskI_props.PixelIdxList;
             props(i).BoundingBox = maskI_props(1).BoundingBox;
             props(i).Area = maskI_props(1).Area;
             props(i).FractalDimension = hausDim(soma);
@@ -163,7 +153,6 @@ function props = ramificationStatsTest(impath, outpath)
             props(i).SpanRatio =  maskI_props(1).MinorAxisLength / maskI_props(1).MajorAxisLength;
             props(i).Density = nnz(bwperim(bwI_open)) / maskI_props(1).ConvexArea;
         else
-            processIdx(i) = 0;
             continue;
         end
     end
@@ -187,6 +176,11 @@ function props = ramificationStatsTest(impath, outpath)
     props = props(~rmIdx);
     totalBranchLength = sum(extractfield(props, 'TotalBranchLength'));
     
+    % Align seeds with props
+    seedsRm = logical(ismember(seedsInd, vertcat(props.PixelIdxList)));
+    X = X(seedsRm);
+    Y = Y(seedsRm);
+    
     % Reindex
     for i = 1:length(props)
         props(i).Index = i;
@@ -194,23 +188,21 @@ function props = ramificationStatsTest(impath, outpath)
     
     fout = fullfile(outpath, strcat('Labels', '_', fname, '.png'));
     fig2 = figure('visible', 'off', 'WindowState','maximized');
-    imshow(labeloverlay(labeloverlay(img, imdilate(bwperim(img_props), ones(2,2)), 'Colormap', [0 0 1], 'Transparency', 0.8), img_skel, 'Colormap', [1 0 0], 'Transparency', 0.3));
+    imshow(labeloverlay(labeloverlay(img, imdilate(bwperim(img_props), ones(2,2)), 'Colormap', [0 0 1], 'Transparency', 0.5), img_skel, 'Colormap', [1 0 0], 'Transparency', 0.5));
 %     imshow(labeloverlay(labeloverlay(img, img_props, 'Colormap', [0 1 0], 'Transparency', 0.85), img_skel, 'Colormap', [1 0 0], 'Transparency', 0.10));
     hold on;
     plot(Y,X,'.','markersize',30,'markeredgecolor','r');
 %     plot(Y,X,'o','markersize',10,'markeredgecolor','g','markeredgecolor','r')
-    for i = 1:size(props, 2)
-        rectangle('Position', props(i).BoundingBox, 'EdgeColor', '#00FF00',...
-            'LineWidth', 1, 'LineStyle', ':');
-        text(props(i).BoundingBox(1)+5, props(i).BoundingBox(2)+10,...
-            num2str(props(i).Index), 'FontSize', 12, 'Color', '#00FF00');
+    for i = 1:length(props)
+        text(Y(i)+5, X(i)-5,...
+            num2str(props(i).Index), 'FontSize', 20, 'Color', '#00FF00');
     end
     hold off;
     title(strcat(fname, ': Detected Somas and Labels'), 'Interpreter', 'none');
     saveas(fig2, fout, 'png');
     
     % Write properties
-    props = rmfield(props, 'BoundingBox');
+    props = rmfield(props, {'BoundingBox', 'PixelIdxList'});
     fname_table = fullfile(outpath, strcat('Stats_', fname, '.csv'));
     writetable(struct2table(props), fname_table);
     
