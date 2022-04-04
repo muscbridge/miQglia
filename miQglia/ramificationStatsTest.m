@@ -70,7 +70,7 @@ function props = ramificationStatsTest(impath, outpath)
     I_smooth = imgaussfilt(I, 2);
 %     seeds = imregionalmax(I_smooth);
 %     seeds = imextendedmax(I_smooth, double(prctile(I_smooth(:),85)), 4);
-    seeds = I >= 0.75;
+    seeds = I_smooth >= 0.75;
     % Remove small objects
     seeds = bwareaopen(seeds, 200);
     % ADD METHOD TO REMOVE NON-ELLIPTICAL OBJECTS
@@ -124,13 +124,13 @@ function props = ramificationStatsTest(impath, outpath)
         % Go through IF loop only when voxels are detected AND there's one
         % continuous structure
         if nnz(bwI_open) > 0  & any(ismember(seedsInd, tmp.PixelIdxList)) %max(bwlabel(bwI_open), [], 'all') == 1
-            processIdx(i) = 1;
             cnt = cnt + 1;
             img_props = img_props + bwI_open;
             % Skeletonize image
             skel = bwskel(bwI_open);
             img_skel = img_skel + skel;
             props(i).Index = cnt;
+            props(i).File = fname;
             props(i).BranchPoints = nnz(bwmorph(skel, 'branchpoints'));
             props(i).EndPoints = nnz(bwmorph(skel, 'endpoints'));
             skel_props_ = regionprops(logical(skel), 'BoundingBox');
