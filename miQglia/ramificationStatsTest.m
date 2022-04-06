@@ -176,10 +176,17 @@ function props = ramificationStatsTest(impath, outpath)
     props = props(~rmIdx);
     totalBranchLength = sum(extractfield(props, 'TotalBranchLength'));
     
-    % Align seeds with props
+    % Remove seeds not present in image properties (props)
     seedsRm = logical(ismember(seedsInd, vertcat(props.PixelIdxList)));
     X = X(seedsRm);
     Y = Y(seedsRm);
+    % Remove connected component image (img_props) objects not present in
+    % image properties (props)
+    img_props = bwselect(img_props, Y, X);
+    % Remove skeleton (img_skel) objects not present in image properties
+    % (props)
+    [rrm, crm] = ind2sub(size(mask), find(img_props));
+    img_skel = bwselect(img_skel, crm, rrm);
     
     % Reindex
     for i = 1:length(props)
