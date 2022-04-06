@@ -28,10 +28,14 @@ function props = ramificationStatsTest(impath, outpath)
         error('Output directory %s does not exist.', outpath)
     end
     %% Define Fixed Variables
-    pixel_micron = 0.25;    % Number of microns per pixel in XY. I measured 40 pixels for 10 um (microns)
-    tophat_filter = 10;      % Size of top-hat filter. Ideally the spatial size of dendrites (in microns)
-    obj_remove = 50;        % Remove features same size or under (in microns)
+    pixel_micron = 0.25;   % Number of microns per pixel in XY. I measured 40 pixels for 10 um (microns)
+    tophat_filter = 10;    % Size of top-hat filter. Ideally the spatial size of dendrites (in microns)
+    obj_remove = 50;       % Remove features same size or under (in microns)
     min_branch = 5;        % Minimum length of total branch distance (microns)
+    min_area = 100;        % Minimum area of microglia to keep in final stats (microns)
+    Nr = 5;                % Number of microglia to select randomly in image. Set to zero disable random selection.
+    Rseed = 1;             % Random number generation seed. A positive integer generates the same seed each
+                           % run (to test multiple runs). Set to 0 to truly randomize blindly.
 
     %% Internal Pixel <--> Pixel Conversion (DO NOT ALTER!)
     obj_remove_pixel = round(obj_remove / pixel_micron, 0);
@@ -40,6 +44,8 @@ function props = ramificationStatsTest(impath, outpath)
     nhood1 = 10; % Neighborhood size of disk-shaped structuring element for initial erosion
     nhood2 = 3;  % Neighborhood size of disk-shaped structuring element closing
     nhood_th = round(tophat_filter / pixel_micron);
+    S = rng(Rseed, 'twister');  % Seed random number generator
+    
     %% Main
     [fpath,fname,fext] = fileparts(impath);
     img = imread(impath);
@@ -175,7 +181,23 @@ function props = ramificationStatsTest(impath, outpath)
     rmIdx = extractfield(props, 'TotalBranchLength') < min_branch;
     props = props(~rmIdx);
     totalBranchLength = sum(extractfield(props, 'TotalBranchLength'));
+    rmIdx = extractfield(props, 'Area') <= min_area;
+    props = props(~rmIdx);
     
+    % Randomly select microglia (if specified)
+    if Nr > 0
+        if Nr > length(props)
+            Nr = length(props);
+        end
+        rng(S);
+        Ridx = randi(length(props), Nr, 1);
+        kpIdx = zeros(length(props), 1, 'logical');
+        for k = 1:length(Ridx)
+            kpIdx(Ridx(k)) = true;
+        end
+    end
+    props = props(kpIdx);
+       
     % Remove seeds not present in image properties (props)
     seedsRm = logical(ismember(seedsInd, vertcat(props.PixelIdxList)));
     X = X(seedsRm);
