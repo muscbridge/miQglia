@@ -18,7 +18,7 @@
 %--------------------------------------------------------------------------
 %% Enter Paths
 groupDir =  'D:\Datasets\Falangola_Morphology\data\Sub\Older_mice\TG';
-outDir =    'D:\Datasets\Falangola_Morphology\data\Sub\By_Animal\TG';
+outDir =    'D:\Datasets\Falangola_Morphology\data\Sub\By_Animal\Final_Run\TG';
 
 %% Begin
 if ~isdir(groupDir)
@@ -61,7 +61,7 @@ for i = 1:length(aname_)
     for k = 1:length(files_)
         try
         fpath = fullfile(files_(k).folder, files_(k).name);
-        stats = struct2table(ramificationStatsTest(fpath, odir));
+        stats = struct2table(ramificationStats(fpath, odir));
         groupStats = vertcat(groupStats, stats);
         catch
             continue

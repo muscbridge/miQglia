@@ -41,7 +41,7 @@ fnum = length(files);
 for i = 1:fnum
     try
         fpath = fullfile(files(i).folder, files(i).name);
-        stats = struct2table(ramificationStatsTest(fpath, outDir));
+        stats = struct2table(ramificationStats(fpath, outDir));
         groupStats = vertcat(groupStats, stats);
     catch
         continue
