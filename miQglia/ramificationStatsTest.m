@@ -33,7 +33,7 @@ function props = ramificationStatsTest(impath, outpath)
     obj_remove = 50;       % Remove features same size or under (in microns)
     min_branch = 5;        % Minimum length of total branch distance (microns)
     min_area = 100;        % Minimum area of microglia to keep in final stats (microns)
-    Nr = 5;                % Number of microglia to select randomly in image. Set to zero disable random selection.
+    Nr = 0;                % Number of microglia to select randomly in image. Set to zero disable random selection.
     Rseed = 1;             % Random number generation seed. A positive integer generates the same seed each
                            % run (to test multiple runs). Set to 0 to truly randomize blindly.
 
@@ -190,13 +190,13 @@ function props = ramificationStatsTest(impath, outpath)
             Nr = length(props);
         end
         rng(S);
-        Ridx = randi(length(props), Nr, 1);
+        Ridx = randperm(length(props), Nr);
         kpIdx = zeros(length(props), 1, 'logical');
         for k = 1:length(Ridx)
             kpIdx(Ridx(k)) = true;
         end
+        props = props(kpIdx);
     end
-    props = props(kpIdx);
        
     % Remove seeds not present in image properties (props)
     seedsRm = logical(ismember(seedsInd, vertcat(props.PixelIdxList)));
