@@ -39,19 +39,20 @@ for i = 1:length(fname)
     tmp = strsplit(fname{i}, '_');
     aname{i} = tmp{1};
 end
-mid = cell(length(aname), 1);
-for i = 1:length(aname)
-    tmp = strsplit(aname{i}, 'm');
-    mid{i} = ['m' tmp{2}];
-end
-mid_ = unique(mid);
-for i = 1:length(mid_)
+aname_ = unique(aname);
+% mid = cell(length(aname), 1);
+% for i = 1:length(aname)
+%     tmp = strsplit(aname{i}, 'm');
+%     mid{i} = ['m' tmp{2}];
+% end
+% mid_ = unique(mid);
+for i = 1:length(aname_)
     idx = logical(zeros(length(aname),1));
     for j = 1:length(aname)
-        idx(j) = contains(aname{j}, mid_{i});
+        idx(j) = contains(aname{j}, aname_{i});
     end
     files_ = files(idx);
-    odir = fullfile(outDir, mid_{i});
+    odir = fullfile(outDir, aname_{i});
     if ~exist(odir, 'dir')
        mkdir(odir)
     end
@@ -66,5 +67,5 @@ for i = 1:length(mid_)
             continue
         end
     end
-    writetable(groupStats, fullfile(outDir, [mid_{i} '_stats.csv']));
+    writetable(groupStats, fullfile(outDir, [aname_{i} '_stats.csv']));
 end
