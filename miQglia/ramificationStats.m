@@ -155,9 +155,9 @@ function props = ramificationStats(impath, outpath)
             props(i).BoundingBox = maskI_props(1).BoundingBox;
             props(i).Area = maskI_props(1).Area;
             props(i).FractalDimension = hausDim(soma);
-            props(i).Circularity = maskI_props(1).Circularity;
-            props(i).SpanRatio =  maskI_props(1).MinorAxisLength / maskI_props(1).MajorAxisLength;
-            props(i).Density = nnz(bwperim(bwI_open)) / maskI_props(1).ConvexArea;
+            props(i).Circularity = (4 * pi * maskI_props(1).ConvexArea) / nnz(bwperim(maskI_props(1).ConvexImage, 8))^2;
+            props(i).SpanRatio =  maskI_props(1).MajorAxisLength / maskI_props(1).MinorAxisLength;
+            props(i).Density = nnz(bwperim(bwI_open, 8)) / maskI_props(1).ConvexArea;
         else
             continue;
         end
