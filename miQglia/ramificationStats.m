@@ -145,7 +145,7 @@ function props = ramificationStats(impath, outpath)
             props(i).MaxBranchLength = max(extractfield(skel_props, 'Perimeter')/2);
             props(i).AverageBranchLength = mean(extractfield(skel_props, 'Perimeter')/2);
             props(i).TotalBranchLength = sum(extractfield(skel_props, 'Perimeter')/2);
-            maskI_props = regionprops(bwI_open, 'BoundingBox','PixelIdxList', 'Area', 'Circularity', 'ConvexArea', 'ConvexImage', 'Image', 'MajorAxisLength', 'MinorAxisLength');
+            maskI_props = regionprops(bwI_open, 'BoundingBox','PixelIdxList', 'Perimeter', 'Area', 'Circularity', 'ConvexArea', 'ConvexImage', 'Image', 'MajorAxisLength', 'MinorAxisLength');
             x = fix(maskI_props.BoundingBox(1));
             y = fix(maskI_props.BoundingBox(2));
             bx = fix(maskI_props.BoundingBox(3));
@@ -153,11 +153,16 @@ function props = ramificationStats(impath, outpath)
             soma = imcrop(bwI_open, [x, y, bx, by]);
             props(i).PixelIdxList = maskI_props.PixelIdxList;
             props(i).BoundingBox = maskI_props(1).BoundingBox;
-            props(i).Area = maskI_props(1).Area;
+            props(i).CellArea = maskI_props(1).Area;
+            props(i).CellPerimeter = maskI_props(1).Perimeter;
             props(i).FractalDimension = hausDim(soma);
-            props(i).Circularity = (4 * pi * maskI_props(1).ConvexArea) / nnz(bwperim(maskI_props(1).ConvexImage, 8))^2;
+            props(i).CellCircularity = (4 * pi * maskI_props(1).Area) / nnz(bwperim(maskI_props(1).ConvexImage, 8))^2;
             props(i).SpanRatio =  maskI_props(1).MajorAxisLength / maskI_props(1).MinorAxisLength;
-            props(i).Density = nnz(bwperim(bwI_open, 8)) / maskI_props(1).ConvexArea;
+            props(i).Density = maskI_props(1).Area / maskI_props(1).ConvexArea;
+            props(i).ConvexHullArea = maskI_props(1).ConvexArea;
+            props(i).ConvexHullPerimeter = nnz(bwperim(maskI_props(1).ConvexImage, 8));
+            props(i).ConvexHullCircularity = (4 * pi * maskI_props(1).ConvexArea) / nnz(bwperim(maskI_props(1).ConvexImage, 8))^2;
+            props(i).Roughness = maskI_props(1).Perimeter / nnz(bwperim(maskI_props(1).ConvexImage, 8));
         else
             continue;
         end
@@ -171,17 +176,20 @@ function props = ramificationStats(impath, outpath)
         props(i).MaxBranchLength = props(i).MaxBranchLength * pixel_micron;
         props(i).AverageBranchLength = props(i).AverageBranchLength * pixel_micron;
         props(i).TotalBranchLength = props(i).TotalBranchLength  * pixel_micron;
-        props(i).Area = props(i).Area * pixel_micron_area;
+        props(i).CellArea = props(i).CellArea * pixel_micron_area;
+        props(i).CellPerimeter = props(i).CellPerimeter * pixel_micron;
+        props(i).ConvexHullArea = props(i).ConvexHullArea * pixel_micron_area;
+        props(i).ConvexHullPerimeter = props(i).ConvexHullPerimeter * pixel_micron;
     end
         
     % Filter results based on thresholds
     rmIdx = extractfield(props, 'EndPoints') == 2 & extractfield(props, 'MaxBranchLength') < min_branch;
     props = props(~rmIdx);
     totalEndPoints = sum(extractfield(props, 'EndPoints'));
-    rmIdx = extractfield(props, 'TotalBranchLength') < min_branch;
+    rmIdx = extractfield(props, 'TotalBranchLength') < min_branch;  
     props = props(~rmIdx);
     totalBranchLength = sum(extractfield(props, 'TotalBranchLength'));
-    rmIdx = extractfield(props, 'Area') <= min_area;
+    rmIdx = extractfield(props, 'CellArea') <= min_area;
     props = props(~rmIdx);
     
     % Randomly select microglia (if specified)
