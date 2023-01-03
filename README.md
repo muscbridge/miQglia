@@ -54,31 +54,43 @@ process
 
 <dl>
   <dt><strong>1. BranchPoints</strong></dt>
-  <dd>Number of branch points in microglia</dd>
+  <dd>Total number of branch points detected in microglia.</dd>
   <dt><strong>2. EndPoints</strong></dt>
-  <dd>Length of largest process on microglia</dd>
+  <dd>Total number of end points detected in microglia.</dd>
   <dt><strong>3. Branches</strong></dt>
-  <dd>Number of processes in microglia</dd>
+  <dd>Total number of branched segments in image.</dd>
   <dt><strong>4. MaxBranchLength</strong></dt>
-  <dd>Length of largest process on microglia</dd>
+  <dd>Length of the largest branch found in microns (μm).</dd>
   <dt><strong>5. AverageBranchLength</strong></dt>
-  <dd>Average process length on microglia</dd>
+  <dd>Average branch length in microns (μm).</dd>
   <dt><strong>6. TotalBranchLength</strong></dt>
-  <dd>Summation of all processes lengths on microglia</dd>
+  <dd>Sum of all processes lengths on microglia.</dd>
 </dl>
 
 ### Fractal Analysis
 A set of measures to quantify complexity of microglia structure.
 
 <dl>
-  <dt><strong>1. FractalDimension</strong></dt>
-  <dd>Ratio quantifying cell complexity</dd>
-  <dt><strong>2. Circularity</strong></dt>
-  <dd>Roundness of microglia. Ranges from 0 (perfect circle) to 1 (ellipsoid)</dd>
-  <dt><strong>3. Span Ratio</strong></dt>
-  <dd>Measures microglia elongation</dd>
-  <dt><strong>4. Density</strong></dt>
-  <dd>Quantifies of microglia size</dd>
+  <dt><strong>1. Cell Area</strong></dt>
+  <dd>Area of pixels occupied by cell in microns (μm2) i.e., area of microglia. Also known as cell area (CA).</dd>
+  <dt><strong>2. Cell Perimeter</strong></dt>
+  <dd>Distance around the boundary of microglia in microns (μm) i.e. perimeter of microglia. Also known as cell perimeter (CP).</dd>
+  <dt><strong>3. Fractal Dimension</strong></dt>
+  <dd>Unitless measure of microglia complexity</dd>
+  <dt><strong>4. Cell Circularity</strong></dt>
+  <dd>Roundness of microglia. A perfect circle has a value of 0, whereas an ellipsoid has a value of 1.</dd>
+  <dt><strong>5. Span Ratio</strong></dt>
+  <dd>Ratio of convex hull ellipse’s minor length to major length, a measure of microglia elongation</dd>
+  <dt><strong>6. Density</strong></dt>
+  <dd>Ratio of cell area (CA) to the convex hull area (CHA). This measure is an indicator of cell size. The higher the density, the smaller the microglia.</dd>
+  <dt><strong>7. Convex Hull Area</strong></dt>
+  <dd>Convex hull is the smaller convex polygon that containing the whole microglia. All interior angles of a convex hull are smaller than 180ᵒ. The convex hull area (CHA) is the area of pixels occupied by convex hull in microns (μm).</dd>
+  <dt><strong>8. Convex Hull Perimeter</strong></dt>
+  <dd>Distance around the boundary of convex hull in microns (μm) i.e. perimeter of convex hull.</dd>
+  <dt><strong>9. Convex Hull Circularity</strong></dt>
+  <dd>Roundness of convex hull. A perfect circle has a value of 0, whereas an ellipsoid has a value of 1.</dd>
+  <dt><strong>10. Roughness</strong></dt>
+  <dd>Ratio of cell perimeter (CP) to convex hull perimeter (CHP).</dd>
 </dl>
 
 ## Usage
