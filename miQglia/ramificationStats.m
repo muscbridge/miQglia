@@ -76,7 +76,7 @@ function props = ramificationStats(impath, outpath)
     I_smooth = imgaussfilt(I, 2);
 %     seeds = imregionalmax(I_smooth);
 %     seeds = imextendedmax(I_smooth, double(prctile(I_smooth(:),85)), 4);
-    seeds = I_smooth >= 0.75;
+    seeds = I_smooth >= 0.50;
     % Remove small objects
     seeds = bwareaopen(seeds, 200);
     % ADD METHOD TO REMOVE NON-ELLIPTICAL OBJECTS
