@@ -189,8 +189,11 @@ function props = ramificationStats(impath, outpath)
     rmIdx = extractfield(props, 'TotalBranchLength') < min_branch;  
     props = props(~rmIdx);
     totalBranchLength = sum(extractfield(props, 'TotalBranchLength'));
-    rmIdx = extractfield(props, 'CellArea') <= min_area;
-    props = props(~rmIdx);
+    if min_area ~= 0
+        rmIdx = extractfield(props, 'CellArea') <= min_area;
+        props = props(~rmIdx);
+    end
+    
     
     % Randomly select microglia (if specified)
     if Nr > 0
