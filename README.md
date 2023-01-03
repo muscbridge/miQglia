@@ -28,6 +28,25 @@ current preprocessing steps are:
 The culmination of image processing in this order yielded the best segmentation
 results.
 
+## Watershed Image Segmentation
+> Steps in marker-controlled watershed segmentation
+
+<img src="docs/Watershed_Segmentation.png" alt="Watershed Segmentation" width=512/>
+
+The processed image is subtly blurred with a Gaussian filter, using the MATLAB
+function `imgaussfilt`. A microglia mask (MM) is then created by thresholding
+the Gaussian smoothed image, which is also subsequently used to create a soma
+seed mask (SSM) by applying a higher threshold to demarcate bright regions
+likely to be soma. Regions in SMM were shrunk to point-pixel and regions outside
+of MM were removed to identify and index soma locations (SL). Then, a composite
+image is created for marker-controlled watershed segmentation by imposing SL
+onto inverted gaussian-smoothed as regional minima. The composite image
+undergoes watershed segmentation to identify microglia. Microglia touching the
+border or not overlapping with SL are first removed, then eroded by two pixels
+to clean up watershed segmentation results. Microglia are then quantified by
+metrics in the table below and any microglia with exclusion criteria are
+rejected and removed.
+
 ## Microglia Quantification
 ### Skeleton Analysis
 Metrics are based on skeletonized microglia to capture their complicated network
